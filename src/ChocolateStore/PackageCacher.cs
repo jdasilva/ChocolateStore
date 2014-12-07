@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -58,27 +59,34 @@ namespace ChocolateStore
 
 		private string DownloadFile(string url, string destination)
 		{
+		    try
+		    {
+		        var request = WebRequest.Create(url);
+		        var response = request.GetResponse();
+		        var fileName = Path.GetFileName(response.ResponseUri.LocalPath);
+		        var filePath = Path.Combine(destination, fileName);
 
-			var request = WebRequest.Create(url);
-			var response = request.GetResponse();
-			var fileName = Path.GetFileName(response.ResponseUri.LocalPath);
-			var filePath = Path.Combine(destination, fileName);
+		        if (File.Exists(filePath))
+		        {
+		            SkippingFile(fileName);
+		        }
+		        else
+		        {
+		            DownloadingFile(fileName);
+		            using (var fs = File.Create(filePath))
+		            {
+		                response.GetResponseStream().CopyTo(fs);
+		            }
+		        }
 
-			if (File.Exists(filePath))
-			{
-				SkippingFile(fileName);
-			}
-			else
-			{
-				DownloadingFile(fileName);
-				using (var fs = File.Create(filePath))
-				{
-					response.GetResponseStream().CopyTo(fs);
-				}
-			}
-
-			return filePath;
-
+		        return filePath;
+		    }
+		    catch (Exception e)
+		    {
+		        Console.WriteLine("Failed to download: " + url);
+		        Console.WriteLine(e.Message);
+                return url;
+		    }
 		}
 
 	}
